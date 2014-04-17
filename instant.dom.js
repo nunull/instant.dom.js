@@ -35,8 +35,8 @@ var instantDOM = (function() {
 							$children.eq(i).removeAttr(transformations[n].key);
 						}
 					}
-					console.log($children.eq(i));
-					console.log(transformations[n]);
+					// console.log($children.eq(i));
+					// console.log(transformations[n]);
 				}
 			} else {
 				if(oldElementTree[i - offset]) {
@@ -57,12 +57,32 @@ var instantDOM = (function() {
 			nextDomNode = {};
 
 		nextDomNode = getNextNode(dom, offset);
-		while(nextDomNode) {
+		// while(nextDomNode) {
 			offset = nextDomNode.endIndex;
 			nodes.push(nextDomNode);
 
 			nextDomNode = getNextNode(dom, offset);
-		}
+
+			offset = nextDomNode.endIndex;
+			nodes.push(nextDomNode);
+
+			nextDomNode = getNextNode(dom, offset);
+
+			offset = nextDomNode.endIndex;
+			nodes.push(nextDomNode);
+
+			nextDomNode = getNextNode(dom, offset);
+
+			offset = nextDomNode.endIndex;
+			nodes.push(nextDomNode);
+
+			nextDomNode = getNextNode(dom, offset);
+
+			offset = nextDomNode.endIndex;
+			nodes.push(nextDomNode);
+
+			nextDomNode = getNextNode(dom, offset);
+		// }
 
 		return nodes;
 	};
@@ -70,14 +90,45 @@ var instantDOM = (function() {
 	var getNextNode = function(dom, offset) {
 		if(!offset) offset = 0;
 
-		var startIndex = dom.slice(offset).search(/<[^\/]*>/);
+		var slicedDOM = dom.slice(offset),
+			startIndex = slicedDOM.search(/<[^\/]*>/),
+			headerEndIndex = slicedDOM.search(/>/),
+			header = slicedDOM.slice(startIndex, headerEndIndex).replace('<', '').split(' '),
+			nodeName = header[0],
+			endIndex = slicedDOM.search('</' + nodeName + '>') + ('</' + nodeName + '>').length,
+			source = slicedDOM.slice(startIndex, endIndex),
+			attributes = [],
+			html = slicedDOM.slice(headerEndIndex + 1, endIndex - ('</' + nodeName + '>').length),
+			text = html.replace(/<.*>.*<\/[^\/]*>/, '');
+
+		for(var i = 1, j = header.length; i < j; i++) {
+			var parts = header[i].split('=');
+
+			attributes.push({
+				key: parts[0],
+				value: parts[1].replace(/"/g, '')
+			});
+		}
+
+		console.log(text);
+
+		// console.log(dom.slice(offset));
+		var startIndex = dom.slice(offset).search(/<[^\/]*>/),
+			domNodeHeader = dom.slice(offset + startIndex, offset + dom.slice(offset).search(/>/)),
+			domNodeHeaderParts = domNodeHeader.split(' '),
+			domNodeName = domNodeHeaderParts[0].replace('<', '');
+		
 		if(startIndex != -1) {
-			var endIndex = dom.slice(offset + startIndex).search(/<\/[^\/]*>/) + startIndex,
+			// var endIndex = dom.slice(offset + startIndex).search(/<\/[^\/]*>/) + startIndex,
+			var endIndex = dom.slice(offset + startIndex).search('</' + domNodeName +  '>') + startIndex,
 				domNodeHTML = dom.slice(offset + startIndex, offset + endIndex),
 				domNodeAttributesText = domNodeHTML.split('>')[0].replace('<', '').split(' '),
 				domNodeAttributes = [],
 				domNodeName = domNodeAttributesText[0],
-				domNodeHTMLBody = domNodeHTML.split('>')[1];
+				domNodeHTMLBody = domNodeHTML.split('>');
+			domNodeHTMLBody.shift();
+			domNodeHTMLBody = domNodeHTMLBody.join('>');
+			// console.log(domNodeName, domNodeHTML);
 
 			for(var i = 1, j = domNodeAttributesText.length; i < j; i++) {
 				var parts = domNodeAttributesText[i].split('=');
@@ -95,6 +146,7 @@ var instantDOM = (function() {
 				attributes: domNodeAttributes,
 				html: domNodeHTMLBody,
 				source: domNodeHTML + '</' + domNodeName + '>'
+				// children: getElementTree(domNodeHTMLBody)
 			};
 		} else {
 			return undefined;
